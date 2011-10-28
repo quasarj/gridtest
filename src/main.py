@@ -59,11 +59,16 @@ redDotObj = pygame.image.load('../res/red_dot.png')
 
 fontObj = pygame.font.SysFont("Helvetica", 32)
 
+winSound = pygame.mixer.Sound('../res/win.wav')
+
+
+youwon = False
+
+
 while True: #pygame event loop
-    if (posx, posy) == (30, 30):
-        print "You win!"
-        pygame.quit()
-        sys.exit()
+    if (posx, posy) == (30, 30) and not youwon:
+        winSound.play()
+        youwon = True
     
     windowSurfaceObj.fill(Color.white)
 
@@ -105,6 +110,7 @@ while True: #pygame event loop
             
             
         elif event.type == KEYDOWN:
+            youwon = False
             if event.key == K_ESCAPE:
                 pygame.event.post(pygame.event.Event(QUIT))
 
