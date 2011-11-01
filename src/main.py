@@ -4,9 +4,8 @@ Created on Oct 28, 2011
 @author: QAJarosz
 '''
 
-MSIZE = 96
-BSIZE = 10
-COUNT = 1200
+MSIZE = 33  # MSIZE must always be an odd number!
+BSIZE = 20
 
 import sys
 import random
@@ -14,6 +13,10 @@ import random
 import pygame
 from pygame.locals import *
 
+import numpy
+from numpy.random import random_integers as rnd
+
+from example import maze as example_maze
 
 class Color(object):
     red = pygame.Color(255, 0, 0)
@@ -26,9 +29,11 @@ class Color(object):
 class MazeGame(object):
     theGrid = None
     walls = None
+    maze_func = None
 
-    def __init__(self):
-        self.makeWalls()
+    def __init__(self, maze_function):
+        self.maze_func = maze_function
+        self.drawMaze()
         
         pygame.init()
         self.fpsClock = pygame.time.Clock()
@@ -48,15 +53,8 @@ class MazeGame(object):
         
         self.winSound = pygame.mixer.Sound('../res/win.wav')
 
-    def makeWalls(self):
-        self.walls = set([(random.randint(0, MSIZE - 1), 
-                           random.randint(0, MSIZE - 1)) for i in range(COUNT)])
-        
-        #enclose
-        self.walls.update(set([(0, i) for i in range(MSIZE)]))
-        self.walls.update(set([(MSIZE - 1, i) for i in range(MSIZE)]))
-        self.walls.update(set([(i, 0) for i in range(MSIZE)]))
-        self.walls.update(set([(i, MSIZE - 1) for i in range(MSIZE)]))
+    def drawMaze(self):
+        self.theGrid = self.maze_func(MSIZE, MSIZE)
 
     def eventLoop(self):
         """The main event loop
@@ -79,8 +77,8 @@ class MazeGame(object):
                     
                     if self.posx == j and self.posy == i:
                         color = Color.green
-                    elif (j, i) in self.walls:
-                    #elif self.theGrid[j][i] == 1:
+                    #elif (j, i) in self.walls:
+                    elif self.theGrid[j,i] == 1:
                         color = Color.black
         
                     pygame.draw.rect(self.windowSurfaceObj, 
@@ -118,32 +116,29 @@ class MazeGame(object):
                         pygame.event.post(pygame.event.Event(QUIT))
         
                     elif event.key == K_r:
-                        self.makeWalls()
-        
-        
+                        self.drawMaze()
+
             keys = pygame.key.get_pressed()
             if keys[K_d]:
-                if (self.posx, self.posy + 1) not in self.walls:
+                if not self.theGrid[self.posx, self.posy + 1]:
                     self.posy += 1
                     
             if keys[K_a]:
-                if (self.posx, self.posy - 1) not in self.walls:
+                if not self.theGrid[self.posx, self.posy - 1]:
                     self.posy -= 1
                     
             if keys[K_w]:
-                if (self.posx - 1, self.posy) not in self.walls:
+                if not self.theGrid[self.posx - 1, self.posy]:
                     self.posx -= 1
                     
             if keys[K_s]:
-                if (self.posx + 1, self.posy) not in self.walls:
+                if not self.theGrid[self.posx + 1, self.posy]:
                     self.posx += 1
-                
-                
-                
+
             pygame.display.update()
             self.fpsClock.tick(30) #limit at 30 fps
             
             
 if __name__ == '__main__':
-    game = MazeGame()
+    game = MazeGame(example_maze)
     game.eventLoop()
