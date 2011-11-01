@@ -4,6 +4,9 @@ Created on Oct 28, 2011
 @author: QAJarosz
 '''
 
+MSIZE = 96
+BSIZE = 10
+COUNT = 1200
 
 import sys
 import random
@@ -22,14 +25,16 @@ class Color(object):
 
 class MazeGame(object):
     theGrid = None
+    walls = None
 
     def __init__(self):
-        self.generateGrid()
+        self.makeWalls()
         
         pygame.init()
         self.fpsClock = pygame.time.Clock()
         
-        self.windowSurfaceObj = pygame.display.set_mode((640,640))
+        self.windowSurfaceObj = pygame.display.set_mode((MSIZE * BSIZE, 
+                                                         MSIZE * BSIZE))
         pygame.display.set_caption("GridTest")
         
         self.mousex, self.mousey = 0, 0
@@ -43,25 +48,15 @@ class MazeGame(object):
         
         self.winSound = pygame.mixer.Sound('../res/win.wav')
 
-    def generateGrid(self):
-        """Generate the grid, randomly"""
-        
-        # build the starting grid
-        # this could be replaced with maze generation later
-        self.theGrid = [[0 for i in range(32)] for i in range(32)]
-        
-        #fill with random walls
-        for i in range(300):
-            self.theGrid[random.randint(0, 31)][random.randint(0, 31)] = 1
+    def makeWalls(self):
+        self.walls = set([(random.randint(0, MSIZE - 1), 
+                           random.randint(0, MSIZE - 1)) for i in range(COUNT)])
         
         #enclose
-        self.theGrid[0] = self.theGrid[31] = [1 for i in range(32)]
-        for i in range(32):
-            self.theGrid[i][0] = 1
-            self.theGrid[i][31] = 1
-        
-        
-        self.theGrid[1][1] = 0 #make sure top left corner is empty 
+        self.walls.update(set([(0, i) for i in range(MSIZE)]))
+        self.walls.update(set([(MSIZE - 1, i) for i in range(MSIZE)]))
+        self.walls.update(set([(i, 0) for i in range(MSIZE)]))
+        self.walls.update(set([(i, MSIZE - 1) for i in range(MSIZE)]))
 
     def eventLoop(self):
         """The main event loop
@@ -71,39 +66,40 @@ class MazeGame(object):
         youwon = False
 
         while True: #pygame event loop
-            if (self.posx, self.posy) == (30, 30) and not youwon:
+            if (self.posx, self.posy) == (MSIZE - 2, MSIZE - 2) and not youwon:
                 self.winSound.play()
                 youwon = True
             
             self.windowSurfaceObj.fill(Color.white)
         
             # darw some rectangles
-            for j in range(32):
-                for i in range(32):
+            for j in range(MSIZE):
+                for i in range(MSIZE):
                     color = Color.white
                     
                     if self.posx == j and self.posy == i:
                         color = Color.green
-                    elif self.theGrid[j][i] == 1:
+                    elif (j, i) in self.walls:
+                    #elif self.theGrid[j][i] == 1:
                         color = Color.black
         
                     pygame.draw.rect(self.windowSurfaceObj, 
                                      color, 
-                                     (i*20, j*20, 20, 20))
+                                     (i*BSIZE, j*BSIZE, BSIZE, BSIZE))
             
             
             
-            msgSurfaceObj = self.fontObj.render("This is a test", 
-                                                True, Color.blue)
-            msgRectObj = msgSurfaceObj.get_rect()
-            msgRectObj.topleft = (10, 20)
-            self.windowSurfaceObj.blit(msgSurfaceObj, msgRectObj)
+#            msgSurfaceObj = self.fontObj.render("This is a test", 
+#                                                True, Color.blue)
+#            msgRectObj = msgSurfaceObj.get_rect()
+#            msgRectObj.topleft = (10, 20)
+#            self.windowSurfaceObj.blit(msgSurfaceObj, msgRectObj)
             
         
             # blit the red dot at the cursor, but center it over the cursor
-            self.windowSurfaceObj.blit(self.redDotObj, 
-                                       (self.mousex - (self.redDotObj.get_width()//2), 
-                                        self.mousey - (self.redDotObj.get_height()//2))) 
+#            self.windowSurfaceObj.blit(self.redDotObj, 
+#                                       (self.mousex - (self.redDotObj.get_width()//2), 
+#                                        self.mousey - (self.redDotObj.get_height()//2))) 
             
             
             
@@ -118,28 +114,32 @@ class MazeGame(object):
 
                 elif event.type == KEYDOWN:
                     youwon = False
-                    if event.key == K_ESCAPE:
+                    if event.key == K_ESCAPE or event.key == K_q:
                         pygame.event.post(pygame.event.Event(QUIT))
         
                     elif event.key == K_r:
-                        self.generateGrid()
+                        self.makeWalls()
         
-                    elif event.key == K_d:
-                        if self.theGrid[self.posx][self.posy + 1] == 0:
-                            self.posy += 1
-                            
-                    elif event.key == K_a:
-                        if self.theGrid[self.posx][self.posy - 1] == 0:
-                            self.posy -= 1
-                            
-                    elif event.key == K_w:
-                        if self.theGrid[self.posx - 1][self.posy] == 0:
-                            self.posx -= 1
-                            
-                    elif event.key == K_s:
-                        if self.theGrid[self.posx + 1][self.posy] == 0:
-                            self.posx += 1
         
+            keys = pygame.key.get_pressed()
+            if keys[K_d]:
+                if (self.posx, self.posy + 1) not in self.walls:
+                    self.posy += 1
+                    
+            if keys[K_a]:
+                if (self.posx, self.posy - 1) not in self.walls:
+                    self.posy -= 1
+                    
+            if keys[K_w]:
+                if (self.posx - 1, self.posy) not in self.walls:
+                    self.posx -= 1
+                    
+            if keys[K_s]:
+                if (self.posx + 1, self.posy) not in self.walls:
+                    self.posx += 1
+                
+                
+                
             pygame.display.update()
             self.fpsClock.tick(30) #limit at 30 fps
             
